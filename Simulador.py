@@ -20,7 +20,7 @@ class Simulador:
         
         self.tiempos = []
 
-    def proceso(self, nombre):
+    def proceso(self):
         llegada = self.env.now
         
         memoria_necesaria = random.randint(1, 10)
@@ -39,17 +39,16 @@ class Simulador:
             
             if instrucciones_restantes > 0:
                 if random.randint(1,21) == 1:
-                    yield self.env.timeout(1)  
+                    yield self.env.timeout(1)
         
-      
         yield self.ram.put(memoria_necesaria)
         
         salida = self.env.now
         self.tiempos.append(salida - llegada)
 
     def generador(self):
-        for i in range(self.num_procesos):
-            self.env.process(self.proceso(f"P{i}"))
+        for _ in range(self.num_procesos):
+            self.env.process(self.proceso())
             llegada = random.expovariate(1.0 / self.intervalo)
             yield self.env.timeout(llegada)
 
@@ -63,42 +62,59 @@ class Simulador:
         return promedio, desviacion
 
 
-def ejecutar_experimento(intervalo, memoria, velocidad_cpu, cpus):
+def ejecutar_escenario(nombre, memoria, velocidad_cpu, cpus):
     procesos_lista = [25,50,100,150,200]
-    promedios = []
+    intervalos = [10,5,1]
     
-    for p in procesos_lista:
-        sim = Simulador(p, intervalo, memoria, velocidad_cpu, cpus)
-        prom, des = sim.correr()
-        print(f"Procesos: {p} | Promedio: {prom:.2f} | Desv: {des:.2f}")
-        promedios.append(prom)
-    
-    plt.figure()
-    plt.plot(procesos_lista, promedios)
-    plt.xlabel("Número de procesos")
-    plt.ylabel("Tiempo promedio en el sistema")
-    plt.title(f"Intervalo={intervalo}, Memoria={memoria}, CPU={cpus}, Vel={velocidad_cpu}")
-    plt.show()
+    for intervalo in intervalos:
+        promedios = []
+        
+        print(f"\n--- {nombre} | Intervalo {intervalo} ---")
+        
+        for p in procesos_lista:
+            sim = Simulador(p, intervalo, memoria, velocidad_cpu, cpus)
+            prom, des = sim.correr()
+            print(f"Procesos: {p} | Promedio: {prom:.2f} | Desv: {des:.2f}")
+            promedios.append(prom)
+        
+        plt.figure()
+        plt.plot(procesos_lista, promedios)
+        plt.xlabel("Número de procesos")
+        plt.ylabel("Tiempo promedio")
+        plt.title(f"{nombre} - Intervalo {intervalo}")
+        plt.show()
 
 
-print("Intervalo 10")
-ejecutar_experimento(intervalo=10, memoria=100, velocidad_cpu=3, cpus=1)
 
-print("Intervalo 5")
-ejecutar_experimento(intervalo=5, memoria=100, velocidad_cpu=3, cpus=1)
+#especificaciones iniciales del programa 
+ejecutar_escenario(
+    nombre="Base (Mem=100, CPU=3, 1 procesador)",
+    memoria=100,
+    velocidad_cpu=3,
+    cpus=1
+)
 
-print("Intervalo 1")
-ejecutar_experimento(intervalo=1, memoria=100, velocidad_cpu=3, cpus=1)
+# se incrementa la memoria a 200
 
- # se hacen las mejoras en el código para comparar
+ejecutar_escenario(
+    nombre="Memoria 200",
+    memoria=200,
+    velocidad_cpu=3,
+    cpus=1
+)
 
-print("Memoria 200")
-ejecutar_experimento(intervalo=10, memoria=200, velocidad_cpu=3, cpus=1)
+# se incrementa la velocidad del cpu 
+ejecutar_escenario(
+    nombre="CPU más rápido",
+    memoria=100,
+    velocidad_cpu=6,
+    cpus=1
+)
 
-
-print("CPU más rápido")
-ejecutar_experimento(intervalo=10, memoria=100, velocidad_cpu=6, cpus=1)
-
-
-print("2 CPUs")
-ejecutar_experimento(intervalo=10, memoria=100, velocidad_cpu=3, cpus=2) 
+# se incrementa la cantidad de procesadores
+ejecutar_escenario(
+    nombre="2 Procesadores",
+    memoria=100,
+    velocidad_cpu=3,
+    cpus=2
+)
